@@ -1,0 +1,26 @@
+{
+    "name": "antonskudilo/cliver",
+    "description": "The skeleton application for the Cliver CLI framework",
+    "type": "project",
+    "keywords": [
+        "cliver",
+        "framework"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": ">=8.3",
+        "antonskudilo/cliver-core": "^0.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
