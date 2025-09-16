@@ -168,14 +168,13 @@ class TestPrinter implements PrinterInterface
 A base test class `tests/TestCase.php` is provided to bootstrap the application and container for every test:
 
 ```bash
-class TestCase extends BaseTestCase
+abstract class TestCase extends BaseTestCase
 {
     protected Container $container;
 
-    protected function setUp(): void
+    protected function getContainer(string $basePath): void
     {
-        parent::setUp();
-        $this->container = Bootstrap::init();
+        $this->container = Bootstrap::init($basePath);
     }
 
     protected function makeApp(): Application
@@ -218,6 +217,8 @@ final class PrintCommandTest extends TestCase
 {
     public function testCommandOutput(): void
     {
+        $app = $this->makeApp();
+
         $this->fakeSingleton(
             PrinterInterface::class, 
             new TestPrinter()
@@ -237,8 +238,10 @@ final class PrintCommandTest extends TestCase
 
 ## Running tests
 
+You can run all tests from the `tests/` directory using:
+
 ```bash
-vendor/bin/phpunit --colors=always
+composer test
 ```
 
 ## Helpers
@@ -261,8 +264,7 @@ They simplify working with CLI output, environment variables, and project paths.
 
 #### Path helpers
 
-- `base_path(string $path = '')` – get the absolute path relative to the project root.
-- `config_path(string $path = '')` – get the absolute path to the config/ directory.
+- `load_from(string $path, mixed $default = [])` – loading data from a specific file
 - `join_path(string $base, string $path = '')` – safely concatenate directory paths.
 
 ## Environment configuration

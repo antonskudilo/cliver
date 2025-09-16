@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "antonskudilo/cliver-core",
-            "version": "0.1.4",
+            "version": "v0.1.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/antonskudilo/cliver-core.git",
-                "reference": "3e962cbfb5774873b67c7140f0f26c86e288a0ff"
+                "reference": "824994e86e8bc217374b491c700c38de610cf37d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/antonskudilo/cliver-core/zipball/3e962cbfb5774873b67c7140f0f26c86e288a0ff",
-                "reference": "3e962cbfb5774873b67c7140f0f26c86e288a0ff",
+                "url": "https://api.github.com/repos/antonskudilo/cliver-core/zipball/824994e86e8bc217374b491c700c38de610cf37d",
+                "reference": "824994e86e8bc217374b491c700c38de610cf37d",
                 "shasum": ""
             },
             "require": {
@@ -27,7 +27,7 @@
                 "phpunit/phpunit": "^11.3"
             },
             "bin": [
-                "bin/cliver"
+                "cliver"
             ],
             "type": "library",
             "autoload": {
@@ -54,9 +54,9 @@
             ],
             "support": {
                 "issues": "https://github.com/antonskudilo/cliver-core/issues",
-                "source": "https://github.com/antonskudilo/cliver-core/tree/0.1.4"
+                "source": "https://github.com/antonskudilo/cliver-core/tree/v0.1.6"
             },
-            "time": "2025-08-29T20:45:34+00:00"
+            "time": "2025-09-16T09:23:22+00:00"
         }
     ],
     "packages-dev": [],

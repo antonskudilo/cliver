@@ -21,6 +21,9 @@
             "Tests\\": "tests/"
         }
     },
+    "scripts": {
+        "test": "vendor/bin/phpunit --colors=always tests/"
+    },
     "minimum-stability": "stable",
     "prefer-stable": true
 }
