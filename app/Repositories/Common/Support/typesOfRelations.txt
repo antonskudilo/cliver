@@ -1,0 +1,5 @@
+One to One / Has One
+One to Many / Has Many
+One to Many (Inverse) / Belongs To
+Has Many Through
+

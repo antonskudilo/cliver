@@ -10,7 +10,11 @@ readonly final class Commands
     public static function commands(): array
     {
         return [
-            //
+            OrdersCommand::class,
+            OrdersStatisticCommand::class,
+            DriversCommand::class,
+            CitiesCommand::class,
+            CarsCommand::class,
         ];
     }
 }
