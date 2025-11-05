@@ -22,7 +22,7 @@ final readonly class CitiesService
     {
         $iterator = $this->repository
             ->withRelation('orders')
-            ->if(isset($request->name), fn(CitiesRepository $repo) => $repo->whereName($request->name))
+            ->if(isset($request->name), fn(CitiesRepository $repo) => $repo->whereNameContains($request->name))
             ->if(isset($request->limit), fn(CitiesRepository $repo) => $repo->limit($request->limit))
             ->get();
 

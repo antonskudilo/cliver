@@ -2,13 +2,13 @@
 
 namespace App\Repositories\Common\Support;
 
-final class HasOneRelationConfig extends RelationConfig
+final class HasManyRelation extends Relation
 {
     /**
      * @return bool
      */
     public function isCollection(): bool
     {
-        return false;
+        return true;
     }
 }

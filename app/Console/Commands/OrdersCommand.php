@@ -27,7 +27,7 @@ readonly class OrdersCommand extends BaseCommand
      */
     public static function getDescription(): string
     {
-        return 'Show list of orders. Additional params: drivers, cities, date.';
+        return 'Show list of orders. Additional params: drivers, cities, city, driver, date.';
     }
 
     /**
@@ -42,6 +42,8 @@ readonly class OrdersCommand extends BaseCommand
         $request = OrdersRequest::fromArray([
             'drivers' => $filters['drivers'] ?? null,
             'cities' => $filters['cities'] ?? null,
+            'city' => $filters['city'] ?? null,
+            'driver' => $filters['driver'] ?? null,
             'date' => $filters['date'] ?? null,
             'limit' => $filters['limit'] ?? null,
             'orderBy' => $filters['orderBy'] ?? null,

@@ -2,21 +2,36 @@
 
 namespace App\Repositories\Common\Support;
 
-use App\DataSource\DataSourceInterface;
+use App\DataSource\DataSourceManager;
 use App\Pivots\Common\PivotModel;
+use App\Providers\AppResolver;
+use Throwable;
 
-final readonly class PivotLoader
+final class PivotLoader
 {
-    public function __construct(private DataSourceInterface $dataSource) {}
+    /**
+     * @var DataSourceManager
+     */
+    private mixed $dataSourceManager;
 
     /**
-     * @param ManyToManyRelationConfig $config
+     * @throws Throwable
+     */
+    public function __construct(protected AppResolver $resolver) {
+        $this->dataSourceManager = $this->resolver->make(DataSourceManager::class);
+    }
+
+    /**
+     * @param ManyToManyRelation $config
      * @param array<int|string> $foreignIds
      * @param null $foreignKey
      * @return array<int|string, PivotModel[]>
      */
-    public function load(ManyToManyRelationConfig $config, array $foreignIds, $foreignKey = null): array
+    public function load(ManyToManyRelation $config, array $foreignIds, $foreignKey = null): array
     {
+        // добавить в конфиг условия wherePivot
+
+
         if (!$foreignIds) {
             return [];
         }
@@ -25,7 +40,19 @@ final readonly class PivotLoader
             $foreignKey = $config->getForeignKey();
         }
 
-        $rows = $this->dataSource->get($config->getPivotTableName(), [$foreignKey => $foreignIds]);
+        $dataSource = $this->dataSourceManager->getSourceFor($config->getPivotTableName());
+
+        $rows = $dataSource->get(
+            $config->getPivotTableName(),
+            [
+                $foreignKey => [
+                    [
+                        'operator' => 'in',
+                        'value' => $foreignIds,
+                    ]
+                ],
+            ]);
+
         $grouped = [];
 
         foreach ($rows as $row) {

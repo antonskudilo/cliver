@@ -2,12 +2,12 @@
 
 namespace App\Repositories\Common;
 
-use App\Repositories\Common\Support\RelationConfig;
+use App\Repositories\Common\Support\Relation;
 
 interface SupportsRelations
 {
     /**
-     * @return RelationConfig[]
+     * @return Relation[]
      */
     public function getRelationMap(): array;
 }

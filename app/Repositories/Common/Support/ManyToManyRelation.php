@@ -4,7 +4,7 @@ namespace App\Repositories\Common\Support;
 
 use App\Pivots\Common\PivotModel;
 
-final class ManyToManyRelationConfig extends RelationConfig
+final class ManyToManyRelation extends Relation
 {
     /**
      * @var PivotModel|string|null
@@ -57,7 +57,7 @@ final class ManyToManyRelationConfig extends RelationConfig
         callable $accessor,
         PivotModel|string $pivot,
     ): self {
-        $instance = new ManyToManyRelationConfig(
+        $instance = new ManyToManyRelation(
             name: $name,
             relatedRepositoryClass: $relatedRepositoryClass,
             localKey: $localKey,

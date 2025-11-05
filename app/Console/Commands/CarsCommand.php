@@ -27,7 +27,7 @@ readonly class CarsCommand extends BaseCommand
      */
     public static function getDescription(): string
     {
-        return 'Show list of cars. Additional params: model, number, driverIds, limit';
+        return 'Show list of cars. Additional params: model, number, driver, driverIds, limit';
     }
 
     /**
@@ -40,8 +40,9 @@ readonly class CarsCommand extends BaseCommand
         $filters = $this->parseFilters($args);
 
         $request = CarsRequest::fromArray([
-            'name' => $filters['name'] ?? null,
+            'model' => $filters['model'] ?? null,
             'number' => $filters['number'] ?? null,
+            'driver' => $filters['driver'] ?? null,
             'driverIds' => $filters['driverIds'] ?? null,
             'limit' => $filters['limit'] ?? null,
         ]);

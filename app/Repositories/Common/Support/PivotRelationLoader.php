@@ -11,11 +11,11 @@ final readonly class PivotRelationLoader
 
     /**
      * @param array<object> $entities
-     * @param ManyToManyRelationConfig $config
+     * @param ManyToManyRelation $config
      * @param BaseRepository $relatedRepo
      * @throws Throwable
      */
-    public function loadManyToMany(array $entities, ManyToManyRelationConfig $config, BaseRepository $relatedRepo): void
+    public function loadManyToMany(array $entities, ManyToManyRelation $config, BaseRepository $relatedRepo): void
     {
         $relatedKey = $config->relatedKey;
         $ids = array_map($config->foreignKeySelector, $entities);

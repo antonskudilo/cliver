@@ -8,8 +8,8 @@ use App\Models\Driver;
 use App\Models\Order;
 use App\Providers\AppResolver;
 use App\Repositories\Common\BaseRepository;
-use App\Repositories\Common\Support\HasOneRelationConfig;
-use App\Repositories\Common\Support\RelationConfig;
+use App\Repositories\Common\Support\HasOneRelation;
+use App\Repositories\Common\Support\Relation;
 use App\Repositories\Common\SupportsRelations;
 use DateTimeInterface;
 use Throwable;
@@ -19,10 +19,7 @@ use Throwable;
  */
 class OrdersRepository extends BaseRepository implements SupportsRelations
 {
-    public function __construct(
-        private readonly OrderFactoryInterface $factory,
-        protected AppResolver                  $resolver
-    )
+    public function __construct(private readonly OrderFactoryInterface $factory, protected AppResolver $resolver)
     {
         parent::__construct($resolver);
     }
@@ -46,12 +43,12 @@ class OrdersRepository extends BaseRepository implements SupportsRelations
     }
 
     /**
-     * @return RelationConfig[]
+     * @return Relation[]
      */
     public function getRelationMap(): array
     {
         return [
-            'driver' => HasOneRelationConfig::make(
+            'driver' => HasOneRelation::make(
                 name: 'driver',
                 relatedRepositoryClass: DriversRepository::class,
                 localKey: 'driver_id',
@@ -61,7 +58,7 @@ class OrdersRepository extends BaseRepository implements SupportsRelations
                 setter: fn(Order $order, ?Driver $driver) => $order->setDriver($driver),
                 accessor: fn(Order $order) => $order->getDriver(),
             ),
-            'city' => HasOneRelationConfig::make(
+            'city' => HasOneRelation::make(
                 name: 'city',
                 relatedRepositoryClass: CitiesRepository::class,
                 localKey: 'city_id',
@@ -80,9 +77,9 @@ class OrdersRepository extends BaseRepository implements SupportsRelations
      */
     public function whereDriverId(array|string|int $driverId): static
     {
-        $driverId = array_map('intval', (array) $driverId);
+        $driverId = array_map('intval', (array)$driverId);
 
-        return $this->addCondition('driver_id', $driverId);
+        return $this->whereIn('driver_id', $driverId);
     }
 
     /**
@@ -91,9 +88,9 @@ class OrdersRepository extends BaseRepository implements SupportsRelations
      */
     public function whereCityId(array|string|int $cityId): static
     {
-        $cityId = array_map('intval', (array) $cityId);
+        $cityId = array_map('intval', (array)$cityId);
 
-        return $this->addCondition('city_id', $cityId);
+        return $this->whereIn('city_id', $cityId);
     }
 
     /**
@@ -102,6 +99,26 @@ class OrdersRepository extends BaseRepository implements SupportsRelations
      */
     public function whereDate(DateTimeInterface $date): static
     {
-        return $this->addCondition('date', $date->format('Y-m-d'));
+        return $this->whereIs('date', $date->format('Y-m-d'));
+    }
+
+    /**
+     * @param string $city
+     * @return static
+     * @throws Throwable
+     */
+    public function whereHasCity(string $city): static
+    {
+        return $this->whereHas('city', fn(CitiesRepository $repo) => $repo->whereNameContains($city));
+    }
+
+    /**
+     * @param string $name
+     * @return static
+     * @throws Throwable
+     */
+    public function whereHasDriver(string $name): static
+    {
+        return $this->whereHas('driver', fn(DriversRepository $repo) => $repo->whereNameContains($name));
     }
 }

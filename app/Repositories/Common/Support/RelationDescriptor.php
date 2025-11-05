@@ -14,22 +14,22 @@ final class RelationDescriptor
      * @param callable(object): iterable<object>|object|null $accessor
      */
     private function __construct(
-        public readonly string $name,
+        public readonly string         $name,
         public readonly BaseRepository $repository,
-        public mixed $loader,
-        public mixed $accessor,
-        public RelationConfig $config,
-        private readonly ?PivotLoader $pivotLoader
+        public mixed                   $loader,
+        public mixed                   $accessor,
+        public Relation                $config,
+        private readonly ?PivotLoader  $pivotLoader
     ) {}
 
     /**
-     * Фабричный метод для создания дескриптора с проверками типов.
+     * Factory method for creating a descriptor with type checks
      *
      * @param string $name
      * @param BaseRepository $repository
      * @param callable(array<object>, object): void $loader
      * @param callable $accessor
-     * @param RelationConfig $config
+     * @param Relation $config
      * @param PivotLoader $pivotLoader
      * @return self
      */
@@ -38,10 +38,9 @@ final class RelationDescriptor
         BaseRepository $repository,
         callable       $loader,
         callable       $accessor,
-        RelationConfig $config,
+        Relation       $config,
         PivotLoader    $pivotLoader
     ): self {
-        // дополнительные проверки типов
         if (!is_callable($loader)) {
             throw new InvalidArgumentException("Loader for relation '$name' must be callable");
         }
@@ -54,7 +53,7 @@ final class RelationDescriptor
     }
 
     /**
-     * Выполняет загрузку отношения
+     * Performs relation loading
      *
      * @param array<object> $entities
      * @return void
@@ -65,7 +64,7 @@ final class RelationDescriptor
     }
 
     /**
-     * Получает связанные сущности из родительского объекта
+     * Retrieves related entities from the parent object
      *
      * @param object $entity
      * @return iterable<object>|object|null
@@ -77,13 +76,13 @@ final class RelationDescriptor
 
     /**
      * @param array<string, mixed> $conditions
-     * @return array<int|string> IDs главной модели, которые проходят фильтр по связанной
+     * @return array<int|string>
      * @throws Throwable
      */
     public function filterByRelation(array $conditions = []): array
     {
         // TODO: добавить в $conditions возможность передавать колбэк
-        if ($this->config instanceof ManyToManyRelationConfig) {
+        if ($this->config instanceof ManyToManyRelation) {
             return $this->filterManyToMany($conditions);
         }
 
@@ -104,15 +103,19 @@ final class RelationDescriptor
         }
 
         $relatedKey = $this->config->relatedKey;
+
         return array_unique(array_map(fn($row) => $row[$relatedKey], $related));
     }
 
     /**
-     * TODO: добавить в $conditions возможность передавать колбэк
      * @throws Throwable
      */
     private function filterManyToMany(array $conditions): array
     {
+        if (!$this->config instanceof ManyToManyRelation) {
+            throw new RuntimeException("PivotLoader is required for ManyToMany filtering");
+        }
+
         $related = $this->repository->where($conditions)->rows();
 
         if (empty($related)) {
@@ -121,11 +124,6 @@ final class RelationDescriptor
 
         $relatedKey = $this->config->relatedLocalKey;
         $relatedIds = array_unique(array_map(fn($row) => $row[$relatedKey], $related));
-
-        if (! $this->config instanceof ManyToManyRelationConfig) {
-            throw new RuntimeException("PivotLoader is required for ManyToMany filtering");
-        }
-
         $groupedPivots = $this->pivotLoader->load($this->config, $relatedIds, $this->config->relatedKey);
 
         if (!$groupedPivots) {
@@ -136,7 +134,6 @@ final class RelationDescriptor
 
         foreach ($groupedPivots as $pivots) {
             foreach ($pivots as $pivot) {
-                // Pivot может быть массивом или моделью
                 $ownerIds[] = is_array($pivot)
                     ? $pivot[$this->config->foreignKey]
                     : $pivot->getAttribute($this->config->foreignKey);

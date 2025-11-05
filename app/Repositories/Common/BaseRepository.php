@@ -3,9 +3,10 @@
 namespace App\Repositories\Common;
 
 use App\DataSource\DataSourceInterface;
+use App\DataSource\DataSourceManager;
 use App\Enums\SortDirectionEnum;
 use App\Providers\AppResolver;
-use App\Repositories\Common\Support\RelationConfig;
+use App\Repositories\Common\Support\Relation;
 use App\Repositories\Common\Support\RelationDescriptor;
 use App\Repositories\Common\Support\RelationDescriptorFactory;
 use InvalidArgumentException;
@@ -58,7 +59,8 @@ abstract class BaseRepository
      */
     public function __construct(protected AppResolver $resolver)
     {
-        $this->source = $this->resolver->make(DataSourceInterface::class);
+        $manager = $this->resolver->make(DataSourceManager::class);
+        $this->source = $manager->getSourceFor($this->sourceName());
         $this->relationFactory = $this->resolver->make(RelationDescriptorFactory::class);
     }
 
@@ -112,40 +114,6 @@ abstract class BaseRepository
         return $this;
     }
 
-//    /**
-//     * @param string $field
-//     * @param string|int|array $value
-//     * @return TRepo
-//     */
-//    protected function addCondition(string $field, string|int|array $value)
-//    {
-//        if (isset($this->conditions[$field])) {
-//            $this->conditions[$field] = array_intersect(
-//                (array) $value,
-//                (array) $this->conditions[$field]
-//            );
-//        } else {
-//            $this->conditions[$field] = $value;
-//        }
-//
-//        return $this;
-//    }
-
-    /**
-     * @param array $conditions
-     * @return TRepo
-     */
-    public function where(array $conditions)
-    {
-        // TODO: сюда дважды приходит $conditions
-
-        foreach ($conditions as $field => $condition) {
-            $this->addCondition($field, $condition);
-        }
-
-        return $this;
-    }
-
     /**
      * @return array<TModel>
      * @throws Throwable
@@ -164,6 +132,9 @@ abstract class BaseRepository
         return $entities;
     }
 
+    /**
+     * @return array
+     */
     public function rows(): array
     {
         $rows = [];
@@ -199,7 +170,7 @@ abstract class BaseRepository
      */
     public function find(int|string $id, string $keyField = 'id'): mixed
     {
-        return $this->addCondition($keyField, ['=', $id])->first();
+        return $this->whereIs($keyField, $id)->first();
     }
 
     /**
@@ -225,10 +196,9 @@ abstract class BaseRepository
      */
     public function findManyGrouped(array $ids, string $keyField = 'id'): array
     {
-        $this->addCondition($keyField, ['in', $ids]);
         $entities = [];
 
-        foreach ($this->loadRows() as $row) {
+        foreach ($this->whereIn($keyField, $ids)->loadRows() as $row) {
             $entities[$row[$keyField]][] = $this->mapRow($row);
         }
 
@@ -346,7 +316,7 @@ abstract class BaseRepository
      * @param callable(TRepo): TRepo|null $whenFalse
      * @return TRepo
      */
-    public function if(bool $condition, callable $whenTrue, ?callable $whenFalse = null)
+    public function if(bool $condition, callable $whenTrue, ?callable $whenFalse = null): mixed
     {
         if ($condition) {
             return $whenTrue($this);
@@ -360,96 +330,14 @@ abstract class BaseRepository
     }
 
     /**
-     * @throws Throwable
+     * @param array $conditions
+     * @return TRepo
      */
-    public function loadRelation(string $relation): RelationDescriptor
+    public function where(array $conditions)
     {
-        if (!isset($this->relationFactory)) {
-            throw new LogicException(sprintf(
-                "Cannot load relation '%s': RelationDescriptorFactory is not initialized in repository %s",
-                $relation,
-                static::class
-            ));
+        foreach ($conditions as $field => $condition) {
+            $this->addCondition($field, $condition);
         }
-
-        return $this->relationFactory->make(
-            $this->getRelationConfig($relation)
-        );
-    }
-
-    /**
-     * @param string $relation
-     * @return RelationConfig|null
-     * @throws Throwable
-     */
-    protected function getRelationConfig(string $relation): ?RelationConfig
-    {
-        if (!$this instanceof SupportsRelations) {
-            throw new LogicException(sprintf(
-                'Repository %s does not support relations',
-                static::class
-            ));
-        }
-
-        $map = $this->getRelationMap();
-
-        if (
-            !isset($map[$relation])
-            || !$map[$relation] instanceof RelationConfig
-        ) {
-            throw new InvalidArgumentException("Unknown relation: $relation");
-        }
-
-        return $map[$relation];
-    }
-
-    /**
-     * Фильтрация по существованию связей (аналог whereHas в Eloquent).
-     *
-     * @param string $relation
-     * @param array<string, mixed>|callable $conditions
-     * @return static
-     * @throws Throwable
-     */
-    public function whereHas(string $relation, array|callable $conditions): static
-    {
-        $relationConfig = $this->getRelationConfig($relation);
-        $descriptor = $this->loadRelation($relation);
-
-        if (is_callable($conditions)) {
-            $relatedRepo = $descriptor->repository;
-            $conditions($relatedRepo);
-            $ids = $descriptor->filterByRelation();
-        } else {
-            $ids = $descriptor->filterByRelation($conditions);
-        }
-
-        // Возвращаем новый репозиторий с добавленным условием "IN (ids)"
-        return $this->addCondition(
-            $relationConfig->relatedLocalKey ?? $relationConfig->localKey,
-            ['in', $ids]
-        );
-    }
-
-    /**
-     * @param string $field
-     * @param array|string|int|float $value
-     * @return static
-     */
-    protected function addCondition(string $field, array|string|int|float $value): static
-    {
-        if (is_array($value) && isset($value[0]) && array_key_exists(1, $value)) {
-            $operator = strtolower(trim($value[0]));
-            $val = $value[1];
-        } else {
-            $operator = '=';
-            $val = $value;
-        }
-
-        $this->conditions[$field][] = [
-            'operator' => $operator,
-            'value' => $val,
-        ];
 
         return $this;
     }
@@ -462,6 +350,16 @@ abstract class BaseRepository
     public function whereNot(string $field, mixed $value): static
     {
         return $this->addCondition($field, ['!=', $value]);
+    }
+
+    /**
+     * @param string $field
+     * @param int|string $value
+     * @return static
+     */
+    public function whereIs(string $field, int|string $value): static
+    {
+        return $this->addCondition($field, ['=', $value]);
     }
 
     /**
@@ -486,12 +384,12 @@ abstract class BaseRepository
 
     /**
      * @param string $field
-     * @param string $pattern
+     * @param string $needle
      * @return static
      */
-    public function whereLike(string $field, string $pattern): static
+    public function whereContains(string $field, string $needle): static
     {
-        return $this->addCondition($field, ['like', $pattern]);
+        return $this->addCondition($field, ['like', "%$needle%"]);
     }
 
     /**
@@ -532,5 +430,94 @@ abstract class BaseRepository
     public function whereLte(string $field, int|float $value): static
     {
         return $this->addCondition($field, ['<=', $value]);
+    }
+
+    /**
+     * @param string $field
+     * @param array|string|int|float $value
+     * @return static
+     */
+    protected function addCondition(string $field, array|string|int|float $value): static
+    {
+        if (is_array($value) && isset($value[0]) && array_key_exists(1, $value)) {
+            $operator = strtolower(trim($value[0]));
+            $val = $value[1];
+        } else {
+            $operator = '=';
+            $val = is_array($value) ? $value[0] : $value;
+        }
+
+        $this->conditions[$field][] = [
+            'operator' => $operator,
+            'value' => $val,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * @param string $relation
+     * @param array<string, mixed>|callable $conditions
+     * @return static
+     * @throws Throwable
+     */
+    public function whereHas(string $relation, array|callable $conditions): static
+    {
+        $relationConfig = $this->getRelationConfig($relation);
+        $descriptor = $this->loadRelation($relation);
+
+        if (is_callable($conditions)) {
+            $relatedRepo = $descriptor->repository;
+            $conditions($relatedRepo);
+            $ids = $descriptor->filterByRelation();
+        } else {
+            $ids = $descriptor->filterByRelation($conditions);
+        }
+
+        return $this->whereIn($relationConfig->relatedLocalKey ?? $relationConfig->localKey, $ids);
+    }
+
+    /**
+     * @param string $relation
+     * @return Relation|null
+     * @throws Throwable
+     */
+    protected function getRelationConfig(string $relation): ?Relation
+    {
+        if (!$this instanceof SupportsRelations) {
+            throw new LogicException(sprintf(
+                'Repository %s does not support relations',
+                static::class
+            ));
+        }
+
+        $map = $this->getRelationMap();
+
+        if (
+            !isset($map[$relation])
+            || !$map[$relation] instanceof Relation
+        ) {
+            throw new InvalidArgumentException("Unknown relation: $relation");
+        }
+
+        return $map[$relation];
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function loadRelation(string $relation): RelationDescriptor
+    {
+        if (!isset($this->relationFactory)) {
+            throw new LogicException(sprintf(
+                "Cannot load relation '%s': RelationDescriptorFactory is not initialized in repository %s",
+                $relation,
+                static::class
+            ));
+        }
+
+        return $this->relationFactory->make(
+            $this->getRelationConfig($relation)
+        );
     }
 }

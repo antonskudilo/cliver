@@ -12,9 +12,7 @@ readonly class CitiesCommand extends BaseCommand
     public function __construct(
         private CitiesService $service,
         private CitiesRender  $render,
-    )
-    {
-    }
+    ) {}
 
     /**
      * @return string

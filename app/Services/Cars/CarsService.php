@@ -23,11 +23,19 @@ final readonly class CarsService
         $iterator = $this->repository
             ->withRelation(['drivers'])
 
-            ->whereHas('drivers', ['name' => 'ivan'])
+            // todo: implement filter by pivot table
+//            ->if(true, function (CarsRepository $repo) {
+//                $repo->whereHas('drivers', function (DriversRepository $repo) {
+//                    $repo->wherePivot([
+//                        'driver_id' => ['<', 105],
+//                    ]);
+//                });
+//            })
 
-//            ->if(isset($request->driverIds), fn(CarsRepository $repo) => $repo->whereDriverId($request->driverIds))
-//            ->if(isset($request->name), fn(CarsRepository $repo) => $repo->whereName($request->name))
-//            ->if(isset($request->number), fn(CarsRepository $repo) => $repo->whereNumber($request->number))
+            ->if(isset($request->driver), fn(CarsRepository $repo) => $repo->whereHasDriver($request->driver))
+            ->if(isset($request->driverIds), fn(CarsRepository $repo) => $repo->whereDriverId($request->driverIds))
+            ->if(isset($request->model), fn(CarsRepository $repo) => $repo->whereModelContains($request->model))
+            ->if(isset($request->number), fn(CarsRepository $repo) => $repo->whereNumberContains($request->number))
             ->if(isset($request->limit), fn(CarsRepository $repo) => $repo->limit($request->limit))
             ->get();
 

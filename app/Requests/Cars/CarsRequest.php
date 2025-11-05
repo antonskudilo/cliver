@@ -7,16 +7,18 @@ use App\Requests\Common\BaseRequest;
 final readonly class CarsRequest extends BaseRequest
 {
     /**
-     * @param string|null $name
+     * @param string|null $model
      * @param string|null $number
+     * @param string|null $driver
      * @param array|null $driverIds
      * @param int|null $limit
      */
     public function __construct(
-        public ?string $name = null,
+        public ?string $model = null,
         public ?string $number = null,
-        public ?array $driverIds = null,
-        public ?int $limit = null
+        public ?string $driver = null,
+        public ?array  $driverIds = null,
+        public ?int    $limit = null
     ) {}
 
     /**
@@ -25,16 +27,22 @@ final readonly class CarsRequest extends BaseRequest
      */
     public static function fromArray(array $input): CarsRequest
     {
-        if (isset($input['name'])) {
-            $name = (string)$input['name'];
+        if (isset($input['model'])) {
+            $model = (string)$input['model'];
         } else {
-            $name = null;
+            $model = null;
         }
 
         if (isset($input['number'])) {
             $number = (string)$input['number'];
         } else {
             $number = null;
+        }
+
+        if (isset($input['driver'])) {
+            $driver = (string)$input['driver'];
+        } else {
+            $driver = null;
         }
 
         if (isset($input['driverIds'])) {
@@ -50,8 +58,9 @@ final readonly class CarsRequest extends BaseRequest
         }
 
         return new CarsRequest(
-            name: $name,
+            model: $model,
             number: $number,
+            driver: $driver,
             driverIds: $driverIds,
             limit: $limit
         );

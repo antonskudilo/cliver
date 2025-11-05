@@ -23,15 +23,8 @@ final readonly class OrdersService
     {
         $iterator = $this->repository
             ->withRelation(['driver', 'city'])
-
-//            TODO: test start
-            ->whereHas('city', function (CitiesRepository $repo) {
-                $repo->whereLike('name', 'nizh%');
-            })
-            ->whereHas('driver', ['name' => 'ivan'])
-//            ->whereHas('city', ['name' => 'nizhnekamsk'])
-//            TODO: test end
-
+            ->if(isset($request->city), fn(OrdersRepository $repo) => $repo->whereHasCity($request->city))
+            ->if(isset($request->driver), fn(OrdersRepository $repo) => $repo->whereHasDriver($request->driver))
             ->if(isset($request->driverIds), fn(OrdersRepository $repo) => $repo->whereDriverId($request->driverIds))
             ->if(isset($request->cityIds), fn(OrdersRepository $repo) => $repo->whereCityId($request->cityIds))
             ->if(isset($request->date), fn(OrdersRepository $repo) => $repo->whereDate($request->date))

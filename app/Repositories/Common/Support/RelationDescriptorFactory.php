@@ -17,11 +17,11 @@ final readonly class RelationDescriptorFactory
     /**
      * @template TEntity of object
      * @template TRelated of object
-     * @param RelationConfig $config
+     * @param Relation $config
      * @return RelationDescriptor
      * @throws Throwable
      */
-    public function make(RelationConfig $config): RelationDescriptor
+    public function make(Relation $config): RelationDescriptor
     {
         $relatedRepository = $this->resolver->make($config->relatedRepositoryClass);
 
@@ -30,9 +30,9 @@ final readonly class RelationDescriptorFactory
         }
 
         $loader = match (true) {
-            $config instanceof HasManyRelationConfig => $this->makeHasManyLoader($config, $relatedRepository),
-            $config instanceof HasOneRelationConfig  => $this->makeHasOneLoader($config, $relatedRepository),
-            $config instanceof ManyToManyRelationConfig   => $this->makePivotLoader($config),
+            $config instanceof HasManyRelation => $this->makeHasManyLoader($config, $relatedRepository),
+            $config instanceof HasOneRelation => $this->makeHasOneLoader($config, $relatedRepository),
+            $config instanceof ManyToManyRelation => $this->makePivotLoader($config),
             default => throw new InvalidArgumentException("Unsupported relation type: " . get_class($config))
         };
 
@@ -47,11 +47,11 @@ final readonly class RelationDescriptorFactory
     }
 
     /**
-     * @param HasManyRelationConfig $config
+     * @param HasManyRelation $config
      * @param BaseRepository $relatedRepository
      * @return callable
      */
-    private function makeHasManyLoader(HasManyRelationConfig $config, BaseRepository $relatedRepository): callable
+    private function makeHasManyLoader(HasManyRelation $config, BaseRepository $relatedRepository): callable
     {
         return function (array $entities) use ($config, $relatedRepository): void {
             $relatedRepository->eagerLoad(
@@ -65,11 +65,11 @@ final readonly class RelationDescriptorFactory
     }
 
     /**
-     * @param HasOneRelationConfig $config
+     * @param HasOneRelation $config
      * @param BaseRepository $relatedRepository
      * @return callable
      */
-    private function makeHasOneLoader(HasOneRelationConfig $config, BaseRepository $relatedRepository): callable
+    private function makeHasOneLoader(HasOneRelation $config, BaseRepository $relatedRepository): callable
     {
         return function (array $entities) use ($config, $relatedRepository): void {
             $relatedRepository->eagerLoad(
@@ -83,10 +83,10 @@ final readonly class RelationDescriptorFactory
     }
 
     /**
-     * @param ManyToManyRelationConfig $config
+     * @param ManyToManyRelation $config
      * @return callable
      */
-    private function makePivotLoader(ManyToManyRelationConfig $config): callable
+    private function makePivotLoader(ManyToManyRelation $config): callable
     {
         return fn(array $entities, BaseRepository $relatedRepository) =>
         (new PivotRelationLoader($this->pivotLoader))->loadManyToMany($entities, $config, $relatedRepository);

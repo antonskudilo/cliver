@@ -7,8 +7,8 @@ use App\Factories\Models\Drivers\DriverFactoryInterface;
 use App\Models\Driver;
 use App\Providers\AppResolver;
 use App\Repositories\Common\BaseRepository;
-use App\Repositories\Common\Support\HasManyRelationConfig;
-use App\Repositories\Common\Support\RelationConfig;
+use App\Repositories\Common\Support\HasManyRelation;
+use App\Repositories\Common\Support\Relation;
 use App\Repositories\Common\SupportsRelations;
 use Throwable;
 
@@ -44,12 +44,12 @@ class DriversRepository extends BaseRepository implements SupportsRelations
     }
 
     /**
-     * @return RelationConfig[]
+     * @return Relation[]
      */
     public function getRelationMap(): array
     {
         return [
-            'orders' => HasManyRelationConfig::make(
+            'orders' => HasManyRelation::make(
                 name: 'orders',
                 relatedRepositoryClass: OrdersRepository::class,
                 localKey: 'id',
@@ -71,5 +71,45 @@ class DriversRepository extends BaseRepository implements SupportsRelations
         $id = array_map('intval', (array) $id);
 
         return $this->addCondition('id', $id);
+    }
+
+    /**
+     * @param array|string|int $cityId
+     * @return static
+     * @throws Throwable
+     */
+    public function whereHasOrderCityId(array|string|int $cityId): static
+    {
+        $cityId = array_map('intval', (array)$cityId);
+
+        return $this->whereHas('orders', ['city_id' => $cityId]);
+    }
+
+    /**
+     * @param array|string $date
+     * @return static
+     * @throws Throwable
+     */
+    public function whereHasOrderDate(array|string $date): static
+    {
+        return $this->whereHas('orders', ['date' => (array)$date]);
+    }
+
+    /**
+     * @param string $phone
+     * @return static
+     */
+    public function wherePhoneContains(string $phone): static
+    {
+        return $this->whereContains('phone', $phone);
+    }
+
+    /**
+     * @param string $name
+     * @return static
+     */
+    public function whereNameContains(string $name): static
+    {
+        return $this->whereContains('name', $name);
     }
 }

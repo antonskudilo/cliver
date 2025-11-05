@@ -38,14 +38,25 @@ class DriversRender extends AbstractRender
      */
     private function concatDriverCities(Driver $driver): string
     {
-        $result = '';
-
         if (empty($driver->getOrders())) {
-            return $result;
+            return '';
         }
 
+        $cities = [];
+
         foreach ($driver->getOrders() as $order) {
-            $result .= "#{$order->getCityId()} {$order->getCity()?->getName()}; ";
+            if (isset($cities[$order->getCityId()])) {
+                continue;
+            }
+
+            $cities[$order->getCityId()] = $order->getCity()?->getName();
+        }
+
+        ksort($cities);
+        $result = '';
+
+        foreach ($cities as $cityId => $cityName) {
+            $result .= "#{$cityId} {$cityName}; ";
         }
 
         return $result;

@@ -22,9 +22,10 @@ final readonly class DriversService
     {
         $iterator = $this->repository
             ->withRelation(['orders.city'])
-
-            ->whereHas('orders', ['city_id' => '96']) // TODO: test
-
+            ->if(isset($request->orderCityIds), fn(DriversRepository $repo) => $repo->whereHasOrderCityId($request->orderCityIds))
+            ->if(isset($request->orderDate), fn(DriversRepository $repo) => $repo->whereHasOrderDate($request->orderDate))
+            ->if(isset($request->phone), fn(DriversRepository $repo) => $repo->wherePhoneContains($request->phone))
+            ->if(isset($request->name), fn(DriversRepository $repo) => $repo->whereNameContains($request->name))
             ->if(isset($request->driverIds), fn(DriversRepository $repo) => $repo->whereId($request->driverIds))
             ->if(isset($request->limit), fn(DriversRepository $repo) => $repo->limit($request->limit))
             ->get();

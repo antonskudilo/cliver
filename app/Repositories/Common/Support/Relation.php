@@ -2,7 +2,7 @@
 
 namespace App\Repositories\Common\Support;
 
-abstract class RelationConfig
+abstract class Relation
 {
     protected function __construct(
         public readonly string $name,

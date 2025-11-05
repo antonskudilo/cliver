@@ -41,11 +41,8 @@ class CarsRender extends AbstractRender
             return $result;
         }
 
-        $drivers = $car->getDrivers();
-
         foreach ($car->getDrivers() as $driver) {
-            $pivot = $drivers->getPivot($driver);
-            $result .= "#{$driver->getId()} {$driver->getName()} from {$pivot->getDate()}; ";
+            $result .= "#{$driver->getId()} {$driver->getName()}; ";
         }
 
         return $result;

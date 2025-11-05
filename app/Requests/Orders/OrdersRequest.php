@@ -14,6 +14,8 @@ final readonly class OrdersRequest extends BaseRequest
     /**
      * @param array|null $driverIds
      * @param array|null $cityIds
+     * @param string|null $city
+     * @param string|null $driver
      * @param DateTimeInterface|null $date
      * @param int|null $limit
      * @param string|null $orderBy
@@ -22,6 +24,8 @@ final readonly class OrdersRequest extends BaseRequest
     public function __construct(
         public ?array $driverIds = null,
         public ?array $cityIds = null,
+        public ?string $city = null,
+        public ?string $driver = null,
         public ?DateTimeInterface $date = null,
         public ?int $limit = null,
         public ?string $orderBy = null,
@@ -45,6 +49,18 @@ final readonly class OrdersRequest extends BaseRequest
             $cityIds = array_map('intval', (array) $input['cities']);
         } else {
             $cityIds = null;
+        }
+
+        if (isset($input['city'])) {
+            $city = (string)$input['city'];
+        } else {
+            $city = null;
+        }
+
+        if (isset($input['driver'])) {
+            $driver = (string)$input['driver'];
+        } else {
+            $driver = null;
         }
 
         if (isset($input['date'])) {
@@ -79,6 +95,8 @@ final readonly class OrdersRequest extends BaseRequest
         return new OrdersRequest(
             driverIds: $driverIds,
             cityIds: $cityIds,
+            city: $city,
+            driver: $driver,
             date: $date,
             limit: $limit,
             orderBy: $orderBy,

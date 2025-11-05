@@ -7,8 +7,8 @@ use App\Factories\Models\Cities\CityFactoryInterface;
 use App\Models\City;
 use App\Providers\AppResolver;
 use App\Repositories\Common\BaseRepository;
-use App\Repositories\Common\Support\HasManyRelationConfig;
-use App\Repositories\Common\Support\RelationConfig;
+use App\Repositories\Common\Support\HasManyRelation;
+use App\Repositories\Common\Support\Relation;
 use App\Repositories\Common\SupportsRelations;
 use Throwable;
 
@@ -44,12 +44,12 @@ class CitiesRepository extends BaseRepository implements SupportsRelations
     }
 
     /**
-     * @return RelationConfig[]
+     * @return Relation[]
      */
     public function getRelationMap(): array
     {
         return [
-            'orders' => HasManyRelationConfig::make(
+            'orders' => HasManyRelation::make(
                 name: 'orders',
                 relatedRepositoryClass: OrdersRepository::class,
                 localKey: 'city_id',
@@ -69,5 +69,14 @@ class CitiesRepository extends BaseRepository implements SupportsRelations
     public function whereName(string $name): static
     {
         return $this->addCondition('name', $name);
+    }
+
+    /**
+     * @param string $name
+     * @return static
+     */
+    public function whereNameContains(string $name): static
+    {
+        return $this->whereContains('name', $name);
     }
 }

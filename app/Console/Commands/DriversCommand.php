@@ -27,7 +27,7 @@ readonly class DriversCommand extends BaseCommand
      */
     public static function getDescription(): string
     {
-        return 'Show list of drivers. Additional params: drivers, limit';
+        return 'Show list of drivers. Additional params: drivers, order_city, order_date, phone, name, limit';
     }
 
     /**
@@ -41,6 +41,10 @@ readonly class DriversCommand extends BaseCommand
 
         $request = DriversRequest::fromArray([
             'drivers' => $filters['drivers'] ?? null,
+            'order_city' => $filters['order_city'] ?? null,
+            'order_date' => $filters['order_date'] ?? null,
+            'phone' => $filters['phone'] ?? null,
+            'name' => $filters['name'] ?? null,
             'limit' => $filters['limit'] ?? null,
         ]);
 

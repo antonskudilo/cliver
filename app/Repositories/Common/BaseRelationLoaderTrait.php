@@ -129,8 +129,6 @@ trait BaseRelationLoaderTrait
 
         foreach ($relationTree as $relation => $nested) {
             $descriptor = $this->loadRelation($relation);
-
-            // Загрузили основное отношение
             $descriptor->invokeLoader($entities);
 
             if ($nested) {
