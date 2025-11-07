@@ -105,7 +105,7 @@ trait CsvQueryTrait
                     ComparisonOperatorEnum::NOT_LIKE => !fnmatch(str_replace('%', '*', $target), (string)$value),
                     ComparisonOperatorEnum::IS_NULL => $value === null || $value === '',
                     ComparisonOperatorEnum::IS_NOT_NULL => $value !== null && $value !== '',
-                    default => throw new InvalidArgumentException("Unknown operator: {$operator->value}"),
+                    default => throw new InvalidArgumentException("Unknown operator: $operator->value"),
                 };
 
                 if (!$match) {

@@ -4,7 +4,6 @@ namespace App\Services\Cars;
 
 use App\Collections\Cars\CarsCollection;
 use App\Repositories\CarsRepository;
-use App\Repositories\DriversRepository;
 use App\Requests\Cars\CarsRequest;
 use Throwable;
 

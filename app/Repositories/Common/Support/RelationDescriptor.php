@@ -75,13 +75,14 @@ final class RelationDescriptor
     }
 
     /**
+     * TODO: implement conditions as callback
+     *
      * @param array<string, mixed> $conditions
      * @return array<int|string>
      * @throws Throwable
      */
     public function filterByRelation(array $conditions = []): array
     {
-        // TODO: добавить в $conditions возможность передавать колбэк
         if ($this->config instanceof ManyToManyRelation) {
             return $this->filterManyToMany($conditions);
         }
