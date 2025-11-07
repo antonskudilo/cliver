@@ -2,6 +2,7 @@
 
 namespace App\DataSource;
 
+use App\Enums\ComparisonOperatorEnum;
 use App\Utilities\CsvReader;
 use InvalidArgumentException;
 
@@ -85,20 +86,26 @@ trait CsvQueryTrait
             $value = $row[$field];
 
             foreach ($clauses as $clause) {
-                $operator = $clause['operator'];
+                $operator = $clause['operator'] instanceof ComparisonOperatorEnum
+                    ? $clause['operator']
+                    : ComparisonOperatorEnum::from((string)$clause['operator']);
+
                 $target = $clause['value'];
 
                 $match = match ($operator) {
-                    '=', '==' => $value == $target,
-                    '!=' => $value != $target,
-                    '>' => $value > $target,
-                    '>=' => $value >= $target,
-                    '<' => $value < $target,
-                    '<=' => $value <= $target,
-                    'in' => in_array($value, (array)$target),
-                    'not in' => !in_array($value, (array)$target),
-                    'like' => fnmatch(str_replace('%', '*', $target), $value),
-                    default => throw new InvalidArgumentException("Unknown operator: $operator"),
+                    ComparisonOperatorEnum::EQ, ComparisonOperatorEnum::EQQ => $value == $target,
+                    ComparisonOperatorEnum::NEQ, ComparisonOperatorEnum::NEQ2 => $value != $target,
+                    ComparisonOperatorEnum::GT => $value > $target,
+                    ComparisonOperatorEnum::GTE => $value >= $target,
+                    ComparisonOperatorEnum::LT => $value < $target,
+                    ComparisonOperatorEnum::LTE => $value <= $target,
+                    ComparisonOperatorEnum::IN => in_array($value, (array)$target),
+                    ComparisonOperatorEnum::NOT_IN => !in_array($value, (array)$target),
+                    ComparisonOperatorEnum::LIKE => fnmatch(str_replace('%', '*', $target), (string)$value),
+                    ComparisonOperatorEnum::NOT_LIKE => !fnmatch(str_replace('%', '*', $target), (string)$value),
+                    ComparisonOperatorEnum::IS_NULL => $value === null || $value === '',
+                    ComparisonOperatorEnum::IS_NOT_NULL => $value !== null && $value !== '',
+                    default => throw new InvalidArgumentException("Unknown operator: {$operator->value}"),
                 };
 
                 if (!$match) {

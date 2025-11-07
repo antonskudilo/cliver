@@ -3,6 +3,7 @@
 namespace App\Repositories\Common\Support;
 
 use App\DataSource\DataSourceManager;
+use App\Enums\ComparisonOperatorEnum;
 use App\Pivots\Common\PivotModel;
 use App\Providers\AppResolver;
 use Throwable;
@@ -22,44 +23,49 @@ final class PivotLoader
     }
 
     /**
-     * @param ManyToManyRelation $config
+     * @param ManyToManyRelation $relation
      * @param array<int|string> $foreignIds
      * @param null $foreignKey
+     * @param array $pivotConditions
      * @return array<int|string, PivotModel[]>
      */
-    public function load(ManyToManyRelation $config, array $foreignIds, $foreignKey = null): array
+    public function load(ManyToManyRelation $relation, array $foreignIds, $foreignKey = null, array $pivotConditions = []): array
     {
-        // добавить в конфиг условия wherePivot
-
-
         if (!$foreignIds) {
             return [];
         }
 
         if (!isset($foreignKey)) {
-            $foreignKey = $config->getForeignKey();
+            $foreignKey = $relation->getForeignKey();
         }
 
-        $dataSource = $this->dataSourceManager->getSourceFor($config->getPivotTableName());
+        $dataSource = $this->dataSourceManager->getSourceFor($relation->getPivotTableName());
+
+        $conditions = [
+            $foreignKey => [
+                [
+                    'operator' => ComparisonOperatorEnum::IN,
+                    'value' => $foreignIds,
+                ]
+            ],
+        ];
+
+        foreach ($pivotConditions as $field => $rules) {
+            $conditions[$field] = $rules;
+        }
 
         $rows = $dataSource->get(
-            $config->getPivotTableName(),
-            [
-                $foreignKey => [
-                    [
-                        'operator' => 'in',
-                        'value' => $foreignIds,
-                    ]
-                ],
-            ]);
+            $relation->getPivotTableName(),
+            $conditions
+        );
 
         $grouped = [];
 
         foreach ($rows as $row) {
-            $fk = $row[$config->getForeignKey()];
+            $fk = $row[$relation->getForeignKey()];
 
-            if ($config->isPivotModel()) {
-                $grouped[$fk][] = new ($config->getPivot()::class)($row);
+            if ($relation->isPivotModel()) {
+                $grouped[$fk][] = new ($relation->getPivot()::class)($row);
             } else {
                 $grouped[$fk][] = $row;
             }

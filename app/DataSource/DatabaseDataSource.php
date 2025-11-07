@@ -2,6 +2,7 @@
 
 namespace App\DataSource;
 
+use App\Enums\ComparisonOperatorEnum;
 use App\Enums\SortDirectionEnum;
 use InvalidArgumentException;
 use PDO;
@@ -105,48 +106,51 @@ readonly class DatabaseDataSource implements DataSourceInterface
 
         foreach ($conditions as $field => $clauses) {
             foreach ($clauses as $i => $clause) {
-                $operator = strtolower(trim($clause['operator']));
+                $operator = $clause['operator'] instanceof ComparisonOperatorEnum
+                    ? $clause['operator']
+                    : ComparisonOperatorEnum::from((string)$clause['operator']);
+
                 $value = $clause['value'];
                 $paramName = "{$field}_{$i}";
 
                 switch ($operator) {
-                    case '=':
-                    case '==':
+                    case ComparisonOperatorEnum::EQ:
+                    case ComparisonOperatorEnum::EQQ:
                         $where[] = "$field = :$paramName";
                         $params[$paramName] = $value;
 
                         break;
-                    case '!=':
-                    case '<>':
+                    case ComparisonOperatorEnum::NEQ:
+                    case ComparisonOperatorEnum::NEQ2:
                         $where[] = "$field != :$paramName";
                         $params[$paramName] = $value;
 
                         break;
-                    case '>':
-                    case '<':
-                    case '>=':
-                    case '<=':
-                        $where[] = "$field $operator :$paramName";
+                    case ComparisonOperatorEnum::GT:
+                    case ComparisonOperatorEnum::LT:
+                    case ComparisonOperatorEnum::GTE:
+                    case ComparisonOperatorEnum::LTE:
+                        $where[] = "$field {$operator->value} :$paramName";
                         $params[$paramName] = $value;
 
                         break;
-                    case 'like':
+                    case ComparisonOperatorEnum::LIKE:
                         $where[] = "$field LIKE :$paramName";
                         $params[$paramName] = $value;
 
                         break;
-                    case 'not like':
+                    case ComparisonOperatorEnum::NOT_LIKE:
                         $where[] = "$field NOT LIKE :$paramName";
                         $params[$paramName] = $value;
 
                         break;
-                    case 'in':
-                    case 'not in':
+                    case ComparisonOperatorEnum::IN:
+                    case ComparisonOperatorEnum::NOT_IN:
                         $valueArray = (array)$value;
 
                         if (empty($valueArray)) {
                             // Если массив пуст — условие всегда ложно (для IN) или всегда истинно (для NOT IN)
-                            $where[] = $operator === 'in'
+                            $where[] = $operator === ComparisonOperatorEnum::IN
                                 ? '0=1'
                                 : '1=1';
 
@@ -164,21 +168,21 @@ readonly class DatabaseDataSource implements DataSourceInterface
                         $where[] = sprintf(
                             "%s %s (%s)",
                             $field,
-                            strtoupper($operator),
+                            strtoupper($operator->value),
                             implode(', ', $inPlaceholders)
                         );
 
                         break;
-                    case 'is null':
+                    case ComparisonOperatorEnum::IS_NULL:
                         $where[] = "$field IS NULL";
 
                         break;
-                    case 'is not null':
+                    case ComparisonOperatorEnum::IS_NOT_NULL:
                         $where[] = "$field IS NOT NULL";
 
                         break;
                     default:
-                        throw new InvalidArgumentException("Unsupported operator '$operator' for field '$field'");
+                        throw new InvalidArgumentException("Unsupported operator '$operator->value' for field '$field'");
                 }
             }
         }

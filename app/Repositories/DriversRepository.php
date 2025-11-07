@@ -70,7 +70,7 @@ class DriversRepository extends BaseRepository implements SupportsRelations
     {
         $id = array_map('intval', (array) $id);
 
-        return $this->addCondition('id', $id);
+        return $this->whereIs('id', $id);
     }
 
     /**

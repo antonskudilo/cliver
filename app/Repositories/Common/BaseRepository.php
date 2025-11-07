@@ -4,6 +4,7 @@ namespace App\Repositories\Common;
 
 use App\DataSource\DataSourceInterface;
 use App\DataSource\DataSourceManager;
+use App\Enums\ComparisonOperatorEnum;
 use App\Enums\SortDirectionEnum;
 use App\Providers\AppResolver;
 use App\Repositories\Common\Support\Relation;
@@ -25,9 +26,14 @@ abstract class BaseRepository
     use BaseRelationLoaderTrait;
 
     /**
-     * @var array<callable>
+     * @var array
      */
     private array $conditions = [];
+
+    /**
+     * @var array
+     */
+    private array $pivotConditions = [];
 
     /**
      * @var null|int
@@ -100,6 +106,14 @@ abstract class BaseRepository
     public function getConditions(): array
     {
         return $this->conditions;
+    }
+
+    /**
+     * @return array<string, array<int, array{operator: string, value: mixed}>>
+     */
+    public function getPivotConditions(): array
+    {
+        return $this->pivotConditions;
     }
 
     /**
@@ -276,6 +290,7 @@ abstract class BaseRepository
         $this->unsetConditions();
         $this->unsetOrderBy();
         $this->unsetRelations();
+        $this->unsetPivotConditions();
     }
 
     /**
@@ -308,6 +323,14 @@ abstract class BaseRepository
     private function unsetOrderBy(): void
     {
         $this->orderBy = [];
+    }
+
+    /**
+     * @return void
+     */
+    private function unsetPivotConditions(): void
+    {
+        $this->pivotConditions = [];
     }
 
     /**
@@ -349,7 +372,7 @@ abstract class BaseRepository
      */
     public function whereNot(string $field, mixed $value): static
     {
-        return $this->addCondition($field, ['!=', $value]);
+        return $this->addCondition($field, [ComparisonOperatorEnum::NEQ, $value]);
     }
 
     /**
@@ -359,7 +382,25 @@ abstract class BaseRepository
      */
     public function whereIs(string $field, int|string $value): static
     {
-        return $this->addCondition($field, ['=', $value]);
+        return $this->addCondition($field, [ComparisonOperatorEnum::EQ, $value]);
+    }
+
+    /**
+     * @param string $field
+     * @return static
+     */
+    public function whereNull(string $field): static
+    {
+        return $this->addCondition($field, [ComparisonOperatorEnum::EQ, null]);
+    }
+
+    /**
+     * @param string $field
+     * @return static
+     */
+    public function whereNotNull(string $field): static
+    {
+        return $this->addCondition($field, [ComparisonOperatorEnum::NEQ, null]);
     }
 
     /**
@@ -369,7 +410,7 @@ abstract class BaseRepository
      */
     public function whereIn(string $field, array $values): static
     {
-        return $this->addCondition($field, ['in', $values]);
+        return $this->addCondition($field, [ComparisonOperatorEnum::IN, $values]);
     }
 
     /**
@@ -379,7 +420,7 @@ abstract class BaseRepository
      */
     public function whereNotIn(string $field, array $values): static
     {
-        return $this->addCondition($field, ['not in', $values]);
+        return $this->addCondition($field, [ComparisonOperatorEnum::NOT_IN, $values]);
     }
 
     /**
@@ -389,7 +430,7 @@ abstract class BaseRepository
      */
     public function whereContains(string $field, string $needle): static
     {
-        return $this->addCondition($field, ['like', "%$needle%"]);
+        return $this->addCondition($field, [ComparisonOperatorEnum::LIKE, "%$needle%"]);
     }
 
     /**
@@ -399,7 +440,7 @@ abstract class BaseRepository
      */
     public function whereGt(string $field, int|float $value): static
     {
-        return $this->addCondition($field, ['>', $value]);
+        return $this->addCondition($field, [ComparisonOperatorEnum::GT, $value]);
     }
 
     /**
@@ -409,7 +450,7 @@ abstract class BaseRepository
      */
     public function whereGte(string $field, int|float $value): static
     {
-        return $this->addCondition($field, ['>=', $value]);
+        return $this->addCondition($field, [ComparisonOperatorEnum::GTE, $value]);
     }
 
     /**
@@ -419,7 +460,7 @@ abstract class BaseRepository
      */
     public function whereLt(string $field, int|float $value): static
     {
-        return $this->addCondition($field, ['<', $value]);
+        return $this->addCondition($field, [ComparisonOperatorEnum::LT, $value]);
     }
 
     /**
@@ -429,30 +470,46 @@ abstract class BaseRepository
      */
     public function whereLte(string $field, int|float $value): static
     {
-        return $this->addCondition($field, ['<=', $value]);
+        return $this->addCondition($field, [ComparisonOperatorEnum::LTE, $value]);
     }
 
     /**
      * @param string $field
-     * @param array|string|int|float $value
+     * @param array|string|int|float|null $value
      * @return static
      */
-    protected function addCondition(string $field, array|string|int|float $value): static
+    private function addCondition(string $field, null|array|string|int|float $value): static
     {
-        if (is_array($value) && isset($value[0]) && array_key_exists(1, $value)) {
-            $operator = strtolower(trim($value[0]));
-            $val = $value[1];
-        } else {
-            $operator = '=';
-            $val = is_array($value) ? $value[0] : $value;
-        }
-
-        $this->conditions[$field][] = [
-            'operator' => $operator,
-            'value' => $val,
-        ];
+        $this->conditions[$field][] = $this->buildCondition($value);
 
         return $this;
+    }
+
+    /**
+     * @param array|string|int|float $value
+     * @return array{operator: string, value: mixed}
+     */
+    private function buildCondition(array|string|int|float $value): array
+    {
+        if (is_array($value) && isset($value[0]) && array_key_exists(1, $value)) {
+            $operator = $value[0];
+
+            if ($operator instanceof ComparisonOperatorEnum) {
+                $enumOperator = $operator;
+            } else {
+                $enumOperator = ComparisonOperatorEnum::from((string)$operator);
+            }
+
+            $val = $value[1];
+        } else {
+            $enumOperator = ComparisonOperatorEnum::EQ;
+            $val = is_array($value) ? array_first($value) : $value;
+        }
+
+        return [
+            'operator' => $enumOperator,
+            'value' => $val,
+        ];
     }
 
     /**
@@ -519,5 +576,138 @@ abstract class BaseRepository
         return $this->relationFactory->make(
             $this->getRelationConfig($relation)
         );
+    }
+
+    /**
+     * @param array<string, mixed|array{string, mixed}> $conditions
+     * @return static
+     */
+    public function wherePivot(array $conditions): static
+    {
+        foreach ($conditions as $field => $value) {
+            $this->addPivotCondition($field, $value);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param string $field
+     * @param mixed $value
+     * @return $this
+     */
+    public function wherePivotNot(string $field, mixed $value): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::NEQ, $value]);
+    }
+
+    /**
+     * @param string $field
+     * @param int|string $value
+     * @return $this
+     */
+    public function wherePivotIs(string $field, int|string $value): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::EQ, $value]);
+    }
+
+    /**
+     * @param string $field
+     * @return $this
+     */
+    public function wherePivotNull(string $field): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::EQ, null]);
+    }
+
+    /**
+     * @param string $field
+     * @return $this
+     */
+    public function wherePivotNotNull(string $field): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::NEQ, null]);
+    }
+
+    /**
+     * @param string $field
+     * @param array $values
+     * @return $this
+     */
+    public function wherePivotIn(string $field, array $values): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::IN, $values]);
+    }
+
+    /**
+     * @param string $field
+     * @param array $values
+     * @return $this
+     */
+    public function wherePivotNotIn(string $field, array $values): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::NOT_IN, $values]);
+    }
+
+    /**
+     * @param string $field
+     * @param string $needle
+     * @return $this
+     */
+    public function wherePivotContains(string $field, string $needle): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::LIKE, "%$needle%"]);
+    }
+
+    /**
+     * @param string $field
+     * @param int|float $value
+     * @return $this
+     */
+    public function wherePivotGt(string $field, int|float $value): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::GT, $value]);
+    }
+
+    /**
+     * @param string $field
+     * @param int|float $value
+     * @return $this
+     */
+    public function wherePivotGte(string $field, int|float $value): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::GTE, $value]);
+    }
+
+    /**
+     * @param string $field
+     * @param int|float $value
+     * @return $this
+     */
+    public function wherePivotLt(string $field, int|float $value): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::LT, $value]);
+    }
+
+    /**
+     * @param string $field
+     * @param int|float $value
+     * @return $this
+     */
+    public function wherePivotLte(string $field, int|float $value): static
+    {
+        return $this->addPivotCondition($field, [ComparisonOperatorEnum::LTE, $value]);
+    }
+
+    /**
+     * @param string $field
+     * @param array|string|int|float|null $value
+     * @return static
+     */
+    private function addPivotCondition(string $field, null|array|string|int|float $value): static
+    {
+        $this->pivotConditions[$field][] = $this->buildCondition($value);
+
+        return $this;
     }
 }

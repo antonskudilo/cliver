@@ -41,7 +41,7 @@ final readonly class RelationDescriptorFactory
             repository: $relatedRepository,
             loader: $loader,
             accessor: $config->accessor,
-            config: $config,
+            relation: $config,
             pivotLoader: $this->pivotLoader
         );
     }

@@ -29,7 +29,7 @@ final class RelationDescriptor
      * @param BaseRepository $repository
      * @param callable(array<object>, object): void $loader
      * @param callable $accessor
-     * @param Relation $config
+     * @param Relation $relation
      * @param PivotLoader $pivotLoader
      * @return self
      */
@@ -38,7 +38,7 @@ final class RelationDescriptor
         BaseRepository $repository,
         callable       $loader,
         callable       $accessor,
-        Relation       $config,
+        Relation       $relation,
         PivotLoader    $pivotLoader
     ): self {
         if (!is_callable($loader)) {
@@ -49,7 +49,7 @@ final class RelationDescriptor
             throw new InvalidArgumentException("Accessor for relation '$name' must be callable");
         }
 
-        return new self($name, $repository, $loader, $accessor, $config, $pivotLoader);
+        return new self($name, $repository, $loader, $accessor, $relation, $pivotLoader);
     }
 
     /**
@@ -116,6 +116,7 @@ final class RelationDescriptor
             throw new RuntimeException("PivotLoader is required for ManyToMany filtering");
         }
 
+        $pivotConditions = $this->repository->getPivotConditions();
         $related = $this->repository->where($conditions)->rows();
 
         if (empty($related)) {
@@ -124,7 +125,13 @@ final class RelationDescriptor
 
         $relatedKey = $this->config->relatedLocalKey;
         $relatedIds = array_unique(array_map(fn($row) => $row[$relatedKey], $related));
-        $groupedPivots = $this->pivotLoader->load($this->config, $relatedIds, $this->config->relatedKey);
+
+        $groupedPivots = $this->pivotLoader->load(
+            $this->config,
+            $relatedIds,
+            $this->config->relatedKey,
+            $pivotConditions
+        );
 
         if (!$groupedPivots) {
             return [];

@@ -68,7 +68,7 @@ class CitiesRepository extends BaseRepository implements SupportsRelations
      */
     public function whereName(string $name): static
     {
-        return $this->addCondition('name', $name);
+        return $this->whereIs('name', $name);
     }
 
     /**

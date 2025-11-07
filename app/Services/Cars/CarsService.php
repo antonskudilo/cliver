@@ -4,6 +4,7 @@ namespace App\Services\Cars;
 
 use App\Collections\Cars\CarsCollection;
 use App\Repositories\CarsRepository;
+use App\Repositories\DriversRepository;
 use App\Requests\Cars\CarsRequest;
 use Throwable;
 
@@ -22,16 +23,6 @@ final readonly class CarsService
     {
         $iterator = $this->repository
             ->withRelation(['drivers'])
-
-            // todo: implement filter by pivot table
-//            ->if(true, function (CarsRepository $repo) {
-//                $repo->whereHas('drivers', function (DriversRepository $repo) {
-//                    $repo->wherePivot([
-//                        'driver_id' => ['<', 105],
-//                    ]);
-//                });
-//            })
-
             ->if(isset($request->driver), fn(CarsRepository $repo) => $repo->whereHasDriver($request->driver))
             ->if(isset($request->driverIds), fn(CarsRepository $repo) => $repo->whereDriverId($request->driverIds))
             ->if(isset($request->model), fn(CarsRepository $repo) => $repo->whereModelContains($request->model))
